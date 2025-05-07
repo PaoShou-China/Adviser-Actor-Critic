@@ -73,9 +73,13 @@ AAC's performance is benchmarked against the Metric-Residual Network (Cranial-XI
 
 ---
 
-## Dependencies  
-- PyTorch 2.6.0  
-- Gymnasium-Robotics 1.2.4  
+## Installation Guide  
+### Create conda environment with Python 3.10
+conda create -n AAC python=3.10
+conda activate AAC
+### Install required packages
+pip install tianshou==1.1.0
+pip install gymnasium-robotics==1.2.4
 
 ---  
 *This implementation extends methodologies from [Cranial-XIX/metric-residual-network](https://github.com/Cranial-XIX/metric-residual-network) and [Farama-Foundation/Gymnasium-Robotics](https://github.com/Farama-Foundation/Gymnasium-Robotics).*
