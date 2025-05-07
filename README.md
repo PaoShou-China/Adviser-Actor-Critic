@@ -76,9 +76,12 @@ AAC's performance is benchmarked against the Metric-Residual Network (Cranial-XI
 ## Installation Guide  
 ### Create conda environment with Python 3.10
 conda create -n AAC python=3.10
+
 conda activate AAC
+
 ### Install required packages
 pip install tianshou==1.1.0
+
 pip install gymnasium-robotics==1.2.4
 
 ---  
