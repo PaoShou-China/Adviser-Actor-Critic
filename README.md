@@ -1,45 +1,48 @@
-# AAC: Adviser-Actor-Critic for Reinforcement Learning Control
+# AAC: Adviser-Actor-Critic for Reinforcement Learning Control  
+**Source Code Reference**:  
+- Backbone & Baseline Implementation: [Metric-Residual Network](https://github.com/Cranial-XIX/metric-residual-network)  
+- Benchmark Environment: [Gymnasium-Robotics](https://github.com/Farama-Foundation/Gymnasium-Robotics)  
 
-AAC addresses high-precision control challenges in reinforcement learning through the integration of feedback control theory with adaptive RL frameworks. This architecture demonstrates particular effectiveness in robotics applications requiring precise goal-conditioned control.
+---
 
-## Introduction
+## Introduction  
+The Adviser-Actor-Critic (AAC) framework addresses high-precision control challenges in reinforcement learning (RL) by integrating classical feedback control theory with adaptive RL methodologies. This hybrid architecture demonstrates exceptional performance in robotics applications requiring sub-millimeter positional accuracy and robust goal-conditioned control.  
 
-AAC presents a novel framework for precision-critical control tasks that:
+Key Contributions:  
+- **Theoretical Unification**: Bridges classical control principles (e.g., error integration) with deep RL for enhanced trajectory optimization.  
+- **Mentored Actor Architecture**: Introduces a parameterized Adviser module that refines actor outputs through adaptive action correction.  
+- **Precision Validation**: Achieves ±0.01mm positional accuracy in physical simulations, outperforming conventional RL baselines.  
+- **Domain Transfer**: Demonstrates robustness in real-world robotic systems via environment-agnostic policy learning.  
 
--   **Bridges control theory and RL**: Integrates classical feedback control principles with adaptive reinforcement learning capabilities for enhanced trajectory optimization  
--   **Mentored Actor Architecture**: Implements an Adviser module that refines actor outputs through parameterized action refinement  
--   **Performance Advantages**: Demonstrates superior precision (±0.01mm positional accuracy in physical simulations) compared to conventional RL baselines  
--   **Real-world Applicability**: Achieves robust performance in robotic systems through domain transfer capabilities  
+---
 
-## Methodology
+## Methodology  
 
-### Control-Theoretic Adviser Design
+### Control-Theoretic Adviser Design  
+The Adviser module implements a parameterized control law inspired by PID controllers, defined by three tunable parameters:  
+- **Proportional Gain** $K_p$: Regulates response to instantaneous state errors.  
+- **Integral Gain** $K_i$: Accumulates historical errors to eliminate steady-state deviations.  
+- **Smoothing Factor** $\sigma$: Modulates action update smoothness to suppress oscillations.  
 
-The Adviser module implements a parameterized control law with three tunable parameters:  
-- **Proportional gain** $K_p$  
-- **Integral gain** $K_i$  
-- **Smoothing factor** $\sigma$  
+This formulation operates within the Gymnasium-Robotics environment framework, enabling compatibility with robotic manipulation tasks requiring high-dimensional state observations and goal-conditioned policies.  
 
-This formulation operates within the Gymnasium-Robotics environment framework, specifically designed for robotic control tasks. The Adviser generates corrective actions through adaptive error integration while maintaining compatibility with standard RL training pipelines.
+---
 
-## Implementation
+## Implementation  
 
-### Training Protocol
+### Training Protocol  
+The agent is trained via the `train_agent` function in `main.py`. Critical hyperparameters include:  
+- `epochs`: Total training iterations.  
+- `batch_size`: Batch dimension for gradient updates.  
+- `learn_start_size`: Minimum buffer size before policy optimization begins.  
 
-The agent is trained using `train_agent` function in `main.py`. Key configuration parameters include:
-
-- Training duration: `epochs`  
-- Batch sizing: `batch_size`  
-- Experience buffer initialization: `learn_start_size`  
-
-Adviser behavior is controlled through distinct parameter sets:
+Adviser behavior is decoupled between training and evaluation phases:  
 ```python
 adviser_train = create_adviser(env.desired_goal_dim, env.sim.dt, args.adviser_train_params)
 adviser_eval = create_adviser(env.desired_goal_dim, env.sim.dt, args.adviser_eval_params)
 ```
 
-### Adviser Interface
-
+### Adviser Interface  
 ```python
 def create_adviser(dim, dt, params):
     """
@@ -50,6 +53,29 @@ def create_adviser(dim, dt, params):
     """
 ```
 
-## Experimental Framework
+---
 
-All experiments are conducted within the Gymnasium-Robotics environment suite, targeting robotic manipulation tasks. The implementation prioritizes domain-specific optimizations for control precision while maintaining compatibility with standard RL frameworks. Evaluation focuses on goal-conditioned tasks requiring sub-millimeter accuracy in high-dimensional state spaces.
+## Experimental Framework  
+
+### Benchmarking Protocol  
+All experiments are conducted on the Gymnasium-Robotics environment suite, focusing on high-dimensional robotic manipulation tasks (e.g., FetchReach, HandManipulate). Evaluation metrics include:  
+1. **Positional Accuracy**: Measured via Euclidean distance between achieved and desired goals.  
+2. **Policy Robustness**: Tested under domain shifts (sim-to-real transfer).  
+3. **Training Stability**: Quantified through reward variance and convergence rates.  
+
+### Baseline Comparison  
+AAC's performance is benchmarked against the Metric-Residual Network (Cranial-XIX, 2022), a state-of-the-art RL architecture for precision control. Key differences include:  
+| Feature                | AAC Framework               | Metric-Residual Network      |  
+|------------------------|----------------------------|------------------------------|  
+| Control Integration    | Explicit parameterized Adviser | Implicit residual learning    |  
+| Action Refinement      | Hierarchical (Actor + Adviser) | Single-stage residual correction |  
+| Domain Adaptability    | Domain-agnostic parameters  | Environment-specific tuning   |  
+
+---
+
+## Dependencies  
+- PyTorch 2.6.0  
+- Gymnasium-Robotics 1.2.4  
+
+---  
+*This implementation extends methodologies from [Cranial-XIX/metric-residual-network](https://github.com/Cranial-XIX/metric-residual-network) and [Farama-Foundation/Gymnasium-Robotics](https://github.com/Farama-Foundation/Gymnasium-Robotics).*
