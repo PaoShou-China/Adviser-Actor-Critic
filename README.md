@@ -6,7 +6,7 @@
 ---
 
 ## Introduction  
-The Adviser-Actor-Critic (AAC) framework addresses high-precision control challenges in reinforcement learning (RL) by integrating classical feedback control theory with adaptive RL methodologies. This hybrid architecture demonstrates exceptional performance in robotics applications requiring sub-millimeter positional accuracy and robust goal-conditioned control.  
+The Adviser-Actor-Critic (AAC) framework addresses high-precision control challenges in reinforcement learning (RL) by integrating classical feedback control theory with adaptive RL methodologies. This hybrid architecture demonstrates exceptional performance in robotics applications requiring positional accuracy and robust goal-conditioned control.  
 
 Key Contributions:  
 - **Theoretical Unification**: Bridges classical control principles (e.g., error integration) with deep RL for enhanced trajectory optimization.  
@@ -42,26 +42,64 @@ adviser_train = create_adviser(env.desired_goal_dim, env.sim.dt, args.adviser_tr
 adviser_eval = create_adviser(env.desired_goal_dim, env.sim.dt, args.adviser_eval_params)
 ```
 
-### Adviser Interface  
-```python
-def create_adviser(dim, dt, params):
-    """
-    Constructs control-theoretic adviser with parameters:
-    - dim: Error vector dimensionality (env.desired_goal_dim)
-    - dt: Sampling interval (env.sim.dt)
-    - params: Tuple containing (K_p, K_i, σ)
-    """
-```
+### QuickStart
 
----
+To quickly get started and evaluate the performance improvement brought by the Adviser-Actor-Critic (AAC) framework, follow these simple steps:
+
+##### Run
+
+The main entry point is `main.py`. You can control the PI adviser parameters via `ki_range` and `sigma_range`, and adjust the number of episodes per model using the `episodes` parameter.
+
+##### View Results
+
+After execution, results will be saved under the `log/` directory in JSON format. Each file contains detailed metrics for every episode, comparing performance between:
+
+- The **base controller** (no adviser)
+- The **adviser-enhanced controller**
+
+Key metrics include:
+
+- Success rate
+- Position and rotation errors (`d_pos`, `d_rot`)
+- ITAE (Integral of Time-weighted Absolute Error)
+- Improvement percentages
+
+Example filenames：`log/FetchPick_pqe_[1.0, 0.1, 0.2]_None.json`; `HandManipulateBlockRotateParallel_pqe_[1.0, 0.0, 0.0]_[1.0, 0.6, 0.15].json`
+
+To compare different adviser configurations or environments, simply modify the `parameter ranges` in `main.py` and `ENV_MAP` in `utils.py`, then re-run.
+
+### Code Explanation
+
+`advisers.py`: Implements controllers for robot control goal adjustment.
+
+- Factory function `create_adviser()` to create different controllers.
+- Three controller classes: `PositionController` (3D position PI control), `AttitudeController` (quaternion-based PI control), and `CombinedController` (combines both).
+
+
+
+`evaluate.py`: Provides a framework for evaluating robot control strategies.
+
+- Tools for calculating success rates, evaluating single episodes, and processing model files.
+- `run_serial_evaluation()`: Evaluates all models in a directory using multiprocessing for speed.
+
+  
+`main.py`: Serves as the main entry point for evaluation.
+
+- `run_serial_batch()`: Automates batch evaluation with parameter combinations.
+- Main block defines parameter ranges and evaluates different environments (Fetch, Hand).
+
+
+
+`utils.py`: Offers utility functions and classes for the system.
+
+- Environment mapping and file utilities.
+- Defines `Actor` network for action generation.
+- Provides `Normalizer` for data normalization and `Agent` for evaluation.
+- Functions for loading models, creating environments, and quaternion operations.
 
 ## Experimental Framework  
 
 ### Benchmarking Protocol  
-All experiments are conducted on the Gymnasium-Robotics environment suite, focusing on high-dimensional robotic manipulation tasks (e.g., FetchReach, HandManipulate). Evaluation metrics include:  
-1. **Positional Accuracy**: Measured via Euclidean distance between achieved and desired goals.  
-2. **Policy Robustness**: Tested under domain shifts (sim-to-real transfer).  
-3. **Training Stability**: Quantified through reward variance and convergence rates.  
 
 ### Baseline Comparison  
 AAC's performance is benchmarked against the Metric-Residual Network (Cranial-XIX, 2022), a state-of-the-art RL architecture for precision control. Key differences include:  
@@ -69,8 +107,6 @@ AAC's performance is benchmarked against the Metric-Residual Network (Cranial-XI
 |------------------------|----------------------------|------------------------------|  
 | Control Integration    | Explicit parameterized Adviser | Implicit residual learning    |  
 | Action Refinement      | Hierarchical (Actor + Adviser) | Single-stage residual correction |  
-| Domain Adaptability    | Domain-agnostic parameters  | Environment-specific tuning   |  
-
 ---
 
 ## Installation Guide  
