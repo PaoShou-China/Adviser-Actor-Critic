@@ -1,4 +1,4 @@
-# AAC: Adviser-Actor-Critic for Reinforcement Learning Control  
+# AAC: Adviser-Actor-Critic
 **Source Code Reference**:  
 - Backbone & Baseline Implementation: [Metric-Residual Network](https://github.com/Cranial-XIX/metric-residual-network)  
 - Benchmark Environment: [Gymnasium-Robotics](https://github.com/Farama-Foundation/Gymnasium-Robotics)  
