@@ -35,10 +35,6 @@ def evaluate_single_episode(args):
     np.random.seed(seed + episode_idx)
     obs, _ = env.reset(seed=seed)
 
-    achieved_goals = []
-    desired_goals = []
-    errors = []
-
     time_steps = 0
     itae_pos = 0.0
     itae_rot = 0.0
