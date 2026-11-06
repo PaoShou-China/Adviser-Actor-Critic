@@ -2,12 +2,12 @@ import os
 import json
 import multiprocessing
 import numpy as np
-from utils import *
+from utils import create_environment, load_policy_model, parse_seed_from_filename
 from advisers import create_adviser
 from tqdm import tqdm
 
 dt = 0.04
-base_results_cache = {}    # Global cache to store base controller evaluation results for each model
+base_results_cache = {}
 
 
 def calculate_success_rate(results):
@@ -42,10 +42,12 @@ def evaluate_single_episode(args):
     terminated, truncated = False, False
 
     while not terminated and not truncated:
-        try:
-            d_pos, d_rot = env.unwrapped._goal_distance(obs['achieved_goal'], obs['desired_goal'])
-        except:
-            d_pos, d_rot = np.linalg.norm(obs['achieved_goal'] - obs['desired_goal']).astype(float), 0.0
+        distance_fn = getattr(env.unwrapped, "_goal_distance", None)
+        if callable(distance_fn):
+            d_pos, d_rot = distance_fn(obs["achieved_goal"], obs["desired_goal"])
+        else:
+            d_pos = float(np.linalg.norm(obs["achieved_goal"] - obs["desired_goal"]))
+            d_rot = 0.0
 
         # Update ITAE metrics
         time_steps += 1
@@ -53,7 +55,7 @@ def evaluate_single_episode(args):
         itae_rot += time_steps * dt * d_rot
 
         action = agent.select_action(adviser(obs), stochastic=False)
-        obs, reward, done, truncated, info = env.step(action)
+        obs, reward, terminated, truncated, info = env.step(action)
         total_reward += reward
 
 
@@ -86,7 +88,7 @@ def process_model_file(args):
         return 0.0
 
     results_dir, filename, num_episodes, pos_params, rot_params = args
-    cache_key = f"{results_dir}/{filename}"   # Unique key for caching base results
+    cache_key = (os.path.abspath(results_dir), filename, num_episodes)
 
     env_name = filename.split('_')[0]
     seed = parse_seed_from_filename(filename)
@@ -184,17 +186,16 @@ def run_serial_evaluation(model_dir, num_episodes=10, pos_params=None, rot_param
         rot_params: Rotation PID parameters [Kp, Ki, Kd]
     """
 
-    alg = ['pqe', 'wn', 'asym']
     os.makedirs('log', exist_ok=True)
 
     # Prepare tasks
-    model_files = [f for f in os.listdir(model_dir) if f.endswith('_best.pt')]
+    model_files = sorted(f for f in os.listdir(model_dir) if f.endswith('_best.pt'))
     tasks = [(model_dir, f, num_episodes, pos_params, rot_params) for f in model_files]
 
     # Serial processing
     for i, task in enumerate(tasks):
         results = process_model_file(task)
-        output_file = f"log/{task[0][6:]}_{alg[i]}_{task[3]}_{task[4]}.json"
+        output_file = os.path.join("log", f"{os.path.basename(task[0])}_{os.path.splitext(task[1])[0]}_{task[3]}_{task[4]}.json")
         with open(output_file, 'w') as f:
             json.dump(results, f, indent=2)
         print(f"Processed {i + 1}/{len(tasks)} models")
