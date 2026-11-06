@@ -48,6 +48,8 @@ Use `python main.py --help` to see available options, including `--model-dir`, `
 - `utils.py`: environment map, policy loading and helpers.
 - `model/`: example saved checkpoints.
 
+Episode evaluation stops on either Gymnasium terminal or truncation signals. The output includes one record per paired baseline/adviser episode plus a final summary object.
+
 ## Reproducibility
 
 The evaluation seed is derived from the checkpoint filename. Preserve the filename convention when adding checkpoints. Evaluation requires compatible Gymnasium Robotics, MuJoCo and policy dependencies. Included checkpoints are examples; policy training is outside this repository.
