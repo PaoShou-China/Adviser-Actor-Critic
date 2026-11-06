@@ -1,124 +1,68 @@
-# AAC: Adviser-Actor-Critic for Reinforcement Learning Control  
-**Source Code Reference**:  
-- Backbone & Baseline Implementation: [Metric-Residual Network](https://github.com/Cranial-XIX/metric-residual-network)  
-- Benchmark Environment: [Gymnasium-Robotics](https://github.com/Farama-Foundation/Gymnasium-Robotics)  
+# AAC: Adviser-Actor-Critic for Reinforcement Learning Control
 
----
+This repository contains evaluation code for applying parameterized position and attitude advisers to saved goal-conditioned policies in Gymnasium Robotics environments. The current `main.py` is an **evaluation entry point**: it does not train policies. Checkpoints are expected under `model/<environment>/` by default.
 
-## Introduction  
-The Adviser-Actor-Critic (AAC) framework addresses high-precision control challenges in reinforcement learning (RL) by integrating classical feedback control theory with adaptive RL methodologies. This hybrid architecture demonstrates exceptional performance in robotics applications requiring positional accuracy and robust goal-conditioned control.  
+References:
+- Backbone and baseline: [Metric-Residual Network](https://github.com/Cranial-XIX/metric-residual-network)
+- Environments: [Gymnasium Robotics](https://github.com/Farama-Foundation/Gymnasium-Robotics)
 
-Key Contributions:  
-- **Theoretical Unification**: Bridges classical control principles (e.g., error integration) with deep RL for enhanced trajectory optimization.  
-- **Mentored Actor Architecture**: Introduces a parameterized Adviser module that refines actor outputs through adaptive action correction.  
-- **Precision Validation**: Achieves ±0.01mm positional accuracy in physical simulations, outperforming conventional RL baselines.  
-- **Domain Transfer**: Demonstrates robustness in real-world robotic systems via environment-agnostic policy learning.  
+## What the evaluation does
 
----
+For each selected environment, the script evaluates checkpoints both with a baseline adviser configuration and with each requested adviser parameter combination. It writes per-episode JSON records and summary success rates under `log/`.
 
-## Methodology  
+The supported environment names are defined in `utils.py` (`ENV_MAP`). Checkpoint files must end in `_best.pt`; their filenames must include a seed token matching `_sd<number>_`. The environment name is inferred from the filename prefix before the first underscore.
 
-### Control-Theoretic Adviser Design  
-The Adviser module implements a parameterized control law inspired by PID controllers, defined by three tunable parameters:  
-- **Proportional Gain** $K_p$: Regulates response to instantaneous state errors.  
-- **Integral Gain** $K_i$: Accumulates historical errors to eliminate steady-state deviations.  
-- **Smoothing Factor** $\sigma$: Modulates action update smoothness to suppress oscillations.  
+The Adviser implementations are in `advisers.py`:
+- `PositionController`: position PI correction.
+- `AttitudeController`: quaternion-based attitude PI correction.
+- `CombinedController`: applies position and attitude correction together.
 
-This formulation operates within the Gymnasium-Robotics environment framework, enabling compatibility with robotic manipulation tasks requiring high-dimensional state observations and goal-conditioned policies.  
+## Installation
 
----
+The repository includes a Conda environment specification:
 
-## Implementation  
-
-### Training Protocol  
-The agent is trained via the `train_agent` function in `main.py`. Critical hyperparameters include:  
-- `epochs`: Total training iterations.  
-- `batch_size`: Batch dimension for gradient updates.  
-- `learn_start_size`: Minimum buffer size before policy optimization begins.  
-
-Adviser behavior is decoupled between training and evaluation phases:  
-```python
-adviser_train = create_adviser(env.desired_goal_dim, env.sim.dt, args.adviser_train_params)
-adviser_eval = create_adviser(env.desired_goal_dim, env.sim.dt, args.adviser_eval_params)
+```bash
+conda env create -f aac_environment.yml
+conda activate aac
 ```
 
-### QuickStart
+The environment file pins the main Python packages and versions used for the evaluation code. For a new environment, review platform-specific packages before installation; the package list includes MuJoCo and rendering-related dependencies.
 
-To quickly get started and evaluate the performance improvement brought by the Adviser-Actor-Critic (AAC) framework, follow these simple steps:
+## Evaluate saved models
 
-##### Run
+Evaluate every environment listed in `utils.ENV_MAP` with the default adviser parameter grid and 200 episodes per model:
 
-The main entry point is `main.py`. You can control the PI adviser parameters via `ki_range` and `sigma_range`, and adjust the number of episodes per model using the `episodes` parameter.
+```bash
+python main.py
+```
 
-##### View Results
+Evaluate only selected environments:
 
-After execution, results will be saved under the `log/` directory in JSON format. Each file contains detailed metrics for every episode, comparing performance between:
+```bash
+python main.py --env FetchReach HandManipulateBlockRotateZ
+```
 
-- The **base controller** (no adviser)
-- The **adviser-enhanced controller**
+Use a custom checkpoint directory, episode count, and parameter grid:
 
-Key metrics include:
+```bash
+python main.py --env FetchReach --model-dir model/FetchReach --episodes 50 \
+  --ki-range 0.2,0.5 --sigma-range 0.1,0.3
+```
 
-- Success rate
-- Position and rotation errors (`d_pos`, `d_rot`)
-- ITAE (Integral of Time-weighted Absolute Error)
-- Improvement percentages
+The parameter combinations use `[Kp, Ki, sigma]`, with `Kp=1.0` by default. Set another proportional gain with `--kp`. For `Fetch*` environments, position Adviser parameters are varied; for names containing `Rotate`, attitude parameters are varied; for names containing `Full`, the same parameter grid is paired for both controllers.
 
-Example filenames：`log/FetchPick_pqe_[1.0, 0.1, 0.2]_None.json`; `HandManipulateBlockRotateParallel_pqe_[1.0, 0.0, 0.0]_[1.0, 0.6, 0.15].json`
+Checkpoints are loaded from the environment's default directory `model/<environment>` unless `--model-dir` is supplied. When specifying one custom directory for multiple environments, ensure its checkpoints match the environments being evaluated.
 
-To compare different adviser configurations or environments, simply modify the `parameter ranges` in `main.py` and `ENV_MAP` in `utils.py`, then re-run.
+Results are written beneath `log/` relative to the current working directory. Each JSON file contains per-episode baseline and Adviser metrics, including reward, terminal position/rotation errors, success, and ITAE, followed by an aggregate success-rate record.
 
-### Code Explanation
+## Repository files
 
-`advisers.py`: Implements controllers for robot control goal adjustment.
+- `main.py`: command-line evaluation driver and parameter sweep.
+- `evaluate.py`: checkpoint loading, episode evaluation, metrics, and JSON output.
+- `advisers.py`: position and attitude Adviser controllers.
+- `utils.py`: environment mapping, policy loading, and shared utilities.
+- `model/`: saved checkpoints used by the evaluation script.
 
-- Factory function `create_adviser()` to create different controllers.
-- Three controller classes: `PositionController` (3D position PI control), `AttitudeController` (quaternion-based PI control), and `CombinedController` (combines both).
+## Scope and interpretation
 
-
-
-`evaluate.py`: Provides a framework for evaluating robot control strategies.
-
-- Tools for calculating success rates, evaluating single episodes, and processing model files.
-- `run_serial_evaluation()`: Evaluates all models in a directory using multiprocessing for speed.
-
-  
-`main.py`: Serves as the main entry point for evaluation.
-
-- `run_serial_batch()`: Automates batch evaluation with parameter combinations.
-- Main block defines parameter ranges and evaluates different environments (Fetch, Hand).
-
-
-
-`utils.py`: Offers utility functions and classes for the system.
-
-- Environment mapping and file utilities.
-- Defines `Actor` network for action generation.
-- Provides `Normalizer` for data normalization and `Agent` for evaluation.
-- Functions for loading models, creating environments, and quaternion operations.
-
-## Experimental Framework  
-
-### Benchmarking Protocol  
-
-### Baseline Comparison  
-AAC's performance is benchmarked against the Metric-Residual Network (Cranial-XIX, 2022), a state-of-the-art RL architecture for precision control. Key differences include:  
-| Feature                | AAC Framework               | Metric-Residual Network      |  
-|------------------------|----------------------------|------------------------------|  
-| Control Integration    | Explicit parameterized Adviser | Implicit residual learning    |  
-| Action Refinement      | Hierarchical (Actor + Adviser) | Single-stage residual correction |  
----
-
-## Installation Guide  
-### Create conda environment with Python 3.10
-conda create -n AAC python=3.10
-
-conda activate AAC
-
-### Install required packages
-pip install tianshou==1.1.0
-
-pip install gymnasium-robotics==1.2.4
-
----  
-*This implementation extends methodologies from [Cranial-XIX/metric-residual-network](https://github.com/Cranial-XIX/metric-residual-network) and [Farama-Foundation/Gymnasium-Robotics](https://github.com/Farama-Foundation/Gymnasium-Robotics).*
+The code evaluates saved policies; it does not implement a training loop in this repository's current entry point. Reported performance depends on the checkpoint, environment version, adviser parameters, and episode protocol. The README's usage commands describe the checked-in evaluation workflow; claims about physical accuracy, real-world transfer, or benchmark superiority require separate experimental evidence.
