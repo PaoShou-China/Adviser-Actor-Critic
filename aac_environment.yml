@@ -79,4 +79,3 @@ dependencies:
       - virtualenv==20.16.3
       - werkzeug==3.1.3
       - zipp==3.21.0
-prefix: C:\Users\user\.conda\envs\aac
