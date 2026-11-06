@@ -42,10 +42,6 @@ def evaluate_single_episode(args):
     terminated, truncated = False, False
 
     while not terminated and not truncated:
-        current_ag = obs['achieved_goal'].copy().astype(float)
-        current_dg = obs['desired_goal'].copy().astype(float)
-        achieved_goals.append(current_ag.tolist())
-        desired_goals.append(current_dg.tolist())
         try:
             d_pos, d_rot = env.unwrapped._goal_distance(obs['achieved_goal'], obs['desired_goal'])
         except:
