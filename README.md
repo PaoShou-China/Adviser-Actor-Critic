@@ -2,7 +2,7 @@
 
 # AAC: Adviser-Actor-Critic for Reinforcement Learning Control
 
-[Project homepage](./) · [Quick start](#quick-start) · [Code](https://github.com/PaoShou-China/Adviser-Actor-Critic)
+[Project homepage](https://paoshou-china.github.io/Adviser-Actor-Critic/) · [Quick start](#quick-start) · [Code](https://github.com/PaoShou-China/Adviser-Actor-Critic)
 
 This repository evaluates saved goal-conditioned policies using position and quaternion attitude advisers in Gymnasium Robotics environments. The current `main.py` is an **evaluation entry point**; it does not train policies.
 
