@@ -1,23 +1,23 @@
-![AAC — Adviser-Actor-Critic](assets/hero.svg)
+![AAC evaluation architecture](assets/hero.svg)
 
-# AAC: Adviser-Actor-Critic for Reinforcement Learning Control
+# AAC: Adviser–Actor–Critic
 
-[Project homepage](https://paoshou-china.github.io/Adviser-Actor-Critic/) · [Quick start](#quick-start) · [Code](https://github.com/PaoShou-China/Adviser-Actor-Critic)
+[Project homepage](https://paoshou-china.github.io/Adviser-Actor-Critic/) · [Quick start](#quick-start) · [Source](https://github.com/PaoShou-China/Adviser-Actor-Critic)
 
-This repository evaluates saved goal-conditioned policies using position and quaternion attitude advisers in Gymnasium Robotics environments. The current `main.py` is an **evaluation entry point**; it does not train policies.
+AAC evaluates saved goal-conditioned robotics policies with control-theoretic advisers. The current repository contains evaluation and adviser code; it does **not** include policy training code.
 
-## What it does
+## Method implemented
 
-- `PositionController`: position PI correction.
-- `AttitudeController`: quaternion-based attitude PI correction.
-- `CombinedController`: applies both corrections.
-- Batch comparison of baseline and adviser parameter settings across supported environments.
+- **Position adviser:** a three-dimensional PI correction with thresholded integral accumulation.
+- **Attitude adviser:** quaternion goal-error correction using the imaginary quaternion components and bounded integral accumulation.
+- **Combined adviser:** applies the position and attitude controllers to the corresponding portions of a 7D pose goal.
+- **Evaluation:** compares baseline and adviser-controlled episodes on supported Gymnasium Robotics environments. Episode records include reward, success, final position/rotation distance and ITAE metrics.
 
-The environment mapping is defined in `utils.py`. References: [Metric-Residual Network](https://github.com/Cranial-XIX/metric-residual-network) and [Gymnasium Robotics](https://github.com/Farama-Foundation/Gymnasium-Robotics).
+The supported environment mapping and checkpoint loading are defined in `utils.py`. Related references: [Metric-Residual Network](https://github.com/Cranial-XIX/metric-residual-network) and [Gymnasium Robotics](https://github.com/Farama-Foundation/Gymnasium-Robotics).
 
 ## Installation
 
-The Conda specification is `aac_environment.yml`:
+The Conda environment specification is `aac_environment.yml`:
 
 ```bash
 conda env create -f aac_environment.yml
@@ -26,28 +26,28 @@ conda activate aac
 
 ## Quick start
 
-Checkpoints are read from `model/<environment>/` by default. The file name must end with `_best.pt`, contain a seed token such as `_sd100_`, and begin with the environment name.
+Place compatible checkpoints under `model/<environment>/`. Names must end in `_best.pt`, begin with the environment name and contain a seed token such as `_sd100_`.
 
 ```bash
 python main.py --env FetchReach --episodes 10
 ```
 
-To evaluate all environments using the script defaults:
+Run the configured environment sweep with the CLI defaults:
 
 ```bash
 python main.py
 ```
 
-Options include `--model-dir`, `--kp`, `--ki-range`, and `--sigma-range`. Use `python main.py --help` for the current arguments. Results are written under `log/` as JSON episode records and summaries.
+Use `python main.py --help` to see available options, including `--model-dir`, `--kp`, `--ki-range` and `--sigma-range`. Results are written to `log/` as JSON episode records and summaries.
 
 ## Repository map
 
-- `main.py`: batch evaluation CLI.
-- `evaluate.py`: episode evaluation and result aggregation.
-- `advisers.py`: position, attitude, and combined adviser implementations.
-- `utils.py`: supported environment map, policy loading, and helpers.
-- `model/`: example saved policy checkpoints.
+- `main.py`: CLI and batch evaluation setup.
+- `evaluate.py`: episode execution and result aggregation.
+- `advisers.py`: position, attitude and combined adviser implementations.
+- `utils.py`: environment map, policy loading and helpers.
+- `model/`: example saved checkpoints.
 
-## Reproducibility notes
+## Reproducibility
 
-The evaluation seed is derived from checkpoint filenames. Keep the model filename convention intact when adding checkpoints. Evaluation requires the Gymnasium Robotics/MuJoCo environment and compatible installed dependencies. The saved checkpoints are examples; training code is not included in this repository.
+The evaluation seed is derived from the checkpoint filename. Preserve the filename convention when adding checkpoints. Evaluation requires compatible Gymnasium Robotics, MuJoCo and policy dependencies. Included checkpoints are examples; policy training is outside this repository.
